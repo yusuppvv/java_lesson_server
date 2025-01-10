@@ -101,20 +101,17 @@ public class MyBot extends TelegramLongPollingBot {
     @SneakyThrows
     private void startUp(Long chatId , Update update) {
         if (language == Language.UZ) {
-            Thread.sleep(500);
             uzbekInterface(chatId , update);
         }
         if (language == Language.ru) {
-            Thread.sleep(500);
             russianInterface(chatId , update);
         }
         if (language == Language.en) {
-            Thread.sleep(500);
             englishInterface(chatId , update);
         }
     }
     @SneakyThrows
-    private void russianInterface(Long chatId, Update update) throws IOException {
+    private void russianInterface(Long chatId, Update update){
         String text = update.getMessage().getText();
         Long user = update.getMessage().getFrom().getId();
         if (update.hasMessage() && update.getMessage().getChat().getId().equals(-1002486407181L)) {
@@ -167,7 +164,7 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
     @SneakyThrows
-    private void uzbekInterface(Long chatId , Update update) throws IOException {
+    private void uzbekInterface(Long chatId , Update update){
         String text = update.getMessage().getText();
         Long user = update.getMessage().getFrom().getId();
         if (update.hasMessage() && update.getMessage().getChat().getId().equals(-1002486407181L)) {
@@ -245,7 +242,8 @@ public class MyBot extends TelegramLongPollingBot {
         sendContact.setPhoneNumber(number);
         execute(sendContact);
     }
-    private void error(Update update , Long chatId) throws InterruptedException {
+    @SneakyThrows
+    private void error(Update update , Long chatId){
         switch (language) {
             case UZ -> {
                 sendReplyMessage(chatId , "Noto'g'ri komanda!" , update.getMessage().getMessageId());
@@ -313,7 +311,8 @@ public class MyBot extends TelegramLongPollingBot {
             }
         }
     }
-    private void adminActions(Update update , Long admin , Long chatId) throws IOException {
+    @SneakyThrows
+    private void adminActions(Update update , Long admin , Long chatId) {
         if (update.getMessage().hasVideo()) {
             if (update.getMessage().getCaption() != null) {
                 String fileId = update.getMessage().getVideo().getFileId();
@@ -400,7 +399,8 @@ public class MyBot extends TelegramLongPollingBot {
         sendMessage.setText(text);
         execute(sendMessage);
     }
-    private void saveToExcel(String id , String caption) throws IOException {
+    @SneakyThrows
+    private void saveToExcel(String id , String caption) {
         Workbook workbook;
         Sheet sheet;
         File file = new File(MOVIES_XLSX);
