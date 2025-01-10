@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static Folder.Status.DONE;
-import static Folder.Status.LANGUAGE;
+import static uz.pdp.Status.DONE;
+import static uz.pdp.Status.LANGUAGE;
 
 public class MyBot extends TelegramLongPollingBot {
     private static final String MOVIES_XLSX = "Movies.xlsx";
