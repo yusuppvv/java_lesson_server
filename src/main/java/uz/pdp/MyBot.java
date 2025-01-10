@@ -22,22 +22,23 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static uz.pdp.Status.DONE;
 import static uz.pdp.Status.LANGUAGE;
 
 public class MyBot extends TelegramLongPollingBot {
     private static final String MOVIES_XLSX = "Movies.xlsx";
     private static Status status = Status.START; // Global status
     private static Language language;
+    private List<UserStatus> userStatuses = new ArrayList<>();
     @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
-        Long chatId = message.getChatId();
-        String text = message.getText();
-        System.out.println("update.getMessage() = " + update.getMessage());
+        Long chatId = update.getMessage().getChatId();
+        String text = update.getMessage().getText();
+        UserStatus userStatus = getUserStatus(chatId);
         if (chatId.equals(-1002486407181L) && update.getMessage().getChat().getType().equals("supergroup")){
             if (update.getMessage().hasVideo() && update.getMessage().getFrom().getId().equals(1206667836L)) {
                 if (update.getMessage().getCaption() != null) {
@@ -57,57 +58,64 @@ public class MyBot extends TelegramLongPollingBot {
         else if (update.getMessage().hasVideo() && !update.getMessage().getFrom().getId().equals(1206667836L)){
             sendContact(chatId , sendSentMessage(chatId , update.getMessage().getFrom().getFirstName() + ", Siz menga dars jo'natish huquqiga ega emasiz. Adminga murojat qiling:") , "Azizbek" , "Yusupov" , "+998997012010");
         }
-        switch (status) {
+        switch (userStatus.getStatus()) {
             case START -> {
-                if (update.getMessage().hasText() && text.equals("/start")) {
-                    sendMessage(chatId, "Assalomu alaykum ! ️ Здравствуйте ! Hello !🙋‍♂️");
+                if (text.equals("/start")) {
+                    sendMessage(chatId, "Assalomu alaykum! Tilni tanlang: 🌐");
                     selectLanguage(chatId);
-                    status = LANGUAGE;
+                    userStatus.setStatus(Status.LANGUAGE);
                 }
             }
             case LANGUAGE -> {
+                selectLanguage(chatId);
                 switch (text) {
                     case "\uD83C\uDDFA\uD83C\uDDFF Uzbek tili" -> {
-                        language = Language.UZ;
-                        status = DONE;
+                        userStatus.setLanguage(Language.UZ);
+                        userStatus.setStatus(Status.DONE);
                         sendMessage(chatId, "Assalomu aleykum " + update.getMessage().getChat().getUserName() + ". Bizning botimizga xush kelibsiz!");
                         sendReplyMessage(chatId, "Botimizda faqat Java bo'yicha video darslar ko'rishingiz mumkin. Darslar kod bo'yicha saqlanadi , 1 yoki 2 kabi.", sendSentMessage(chatId, "Botimizdan foydalanish instruksiyasi:"));
                         startUp(chatId, update);
                     }
                     case "🇷🇺 Русский язык" -> {
-                        language = Language.ru;
-                        status = DONE;
+                        userStatus.setLanguage(Language.ru);
+                        userStatus.setStatus(Status.DONE);
                         sendMessage(chatId, "Здравствуйте " + update.getMessage().getChat().getUserName() + ". Добро пожаловать в наш бот!");
                         sendReplyMessage(chatId, "С нашим ботом вы можете только смотреть видео уроки по Жаве. Уроки сохраняются по коду, например, 1 или 2.", sendSentMessage(chatId, "Инструкция по использованию нашего бота:"));
                         startUp(chatId, update);
                     }
                     case "\uD83C\uDDFA\uD83C\uDDF8 English language" -> {
+                        userStatus.setLanguage(Language.en);
+                        userStatus.setStatus(Status.DONE);
                         language = Language.en;
-                        status = DONE;
                         sendMessage(chatId, "Hello " + update.getMessage().getChat().getUserName() + ". Welcome to our bot!");
                         sendReplyMessage(chatId, "You can only watch video lessons about Java with our bot. Lessons are saved by code, such as 1 or 2.", sendSentMessage(chatId, "Instruction on how to use our bot:"));
                         startUp(chatId, update);
                     }
-                    default -> {
-                        selectLanguage(chatId);
-                    }
+                    default -> selectLanguage(chatId);
                 }
             }
             case DONE -> {
-                startUp(chatId , update);
+                startUp(chatId, update);
             }
         }
     }
+    private UserStatus getUserStatus(Long chatId) {
+        for (UserStatus status : userStatuses) {
+            if (status.getChatId().equals(chatId)) {
+                return status;
+            }
+        }
+        UserStatus newUserStatus = new UserStatus(chatId, Status.START);
+        userStatuses.add(newUserStatus);
+        return newUserStatus;
+    }
     @SneakyThrows
     private void startUp(Long chatId , Update update) {
-        if (language == Language.UZ) {
-            uzbekInterface(chatId , update);
-        }
-        if (language == Language.ru) {
-            russianInterface(chatId , update);
-        }
-        if (language == Language.en) {
-            englishInterface(chatId , update);
+        System.out.println("MyBot.startUp");
+        switch (userStatuses.getFirst().getLanguage()) {
+            case UZ -> uzbekInterface(chatId, update);
+            case ru -> russianInterface(chatId, update);
+            case en -> englishInterface(chatId, update);
         }
     }
     @SneakyThrows
@@ -185,7 +193,7 @@ public class MyBot extends TelegramLongPollingBot {
         }
         else if (text.equals("/language")) {
             sendMessage(chatId , "Til tanlang 🌐:");
-            status = LANGUAGE;
+            userStatuses.getLast().setStatus(LANGUAGE);
         }
         else {
             error(update , chatId);
@@ -244,7 +252,7 @@ public class MyBot extends TelegramLongPollingBot {
     }
     @SneakyThrows
     private void error(Update update , Long chatId){
-        switch (language) {
+        switch (userStatuses.getLast().getLanguage()) {
             case UZ -> {
                 sendReplyMessage(chatId , "Noto'g'ri komanda!" , update.getMessage().getMessageId());
                 Thread.sleep(1000);
@@ -264,7 +272,7 @@ public class MyBot extends TelegramLongPollingBot {
     }
     @SneakyThrows
     private void command(String text, Long chatId, Update update) {
-        switch (language) {
+        switch (userStatuses.getLast().getLanguage()) {
             case ru -> {
                 if (text.matches("\\d+")) {
                     try {
@@ -339,7 +347,7 @@ public class MyBot extends TelegramLongPollingBot {
     }
     @SneakyThrows
     private void sendVideo(Long chatId, String videoById , String caption, String text , Integer messageId) {
-        switch (language) {
+        switch (userStatuses.getLast().getLanguage()) {
             case UZ -> {
                 SendVideo sendVideo = new SendVideo();
                 sendVideo.setChatId(chatId);
