@@ -22,9 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static uz.pdp.Status.LANGUAGE;
 
@@ -36,6 +34,9 @@ public class MyBot extends TelegramLongPollingBot {
     @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
+        System.out.println("Chat Id: " + update.getMessage().getChatId());
+        System.out.println("First name: " + update.getMessage().getFrom().getFirstName());
+        System.out.println("Text: " + update.getMessage().getText());
         Long chatId = update.getMessage().getChatId();
         String text = update.getMessage().getText();
         UserStatus userStatus = getUserStatus(chatId);
@@ -111,7 +112,6 @@ public class MyBot extends TelegramLongPollingBot {
     }
     @SneakyThrows
     private void startUp(Long chatId , Update update) {
-        System.out.println("MyBot.startUp");
         switch (userStatuses.getFirst().getLanguage()) {
             case UZ -> uzbekInterface(chatId, update);
             case ru -> russianInterface(chatId, update);
